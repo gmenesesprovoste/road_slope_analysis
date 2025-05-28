@@ -1,0 +1,22 @@
+# Database
+psycopg2-binary
+SQLAlchemy
+
+# Geospatial
+geopandas
+folium
+pyproj
+shapely
+# GDAL is installed separately in Dockerfile to match system version
+
+# Web
+streamlit
+streamlit-folium
+
+# Data processing
+pandas
+numpy
+matplotlib
+
+# Development
+python-dotenv 
