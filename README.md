@@ -22,17 +22,64 @@ This project creates an interactive dashboard to analyze and visualize road slop
 - **Visualization**: Matplotlib, Folium
 
 ## Prerequisites
+
+You have two options to run this project:
+
+### Option 1: Docker (Recommended)
+- [Docker](https://docs.docker.com/get-docker/)
+- [Docker Compose](https://docs.docker.com/compose/install/)
+
+This is the simplest way to get started as it handles all dependencies automatically.
+
+### Option 2: Native Installation
 1. **System Requirements**
    - PostgreSQL 12+ with PostGIS extension
    - Python 3.8+
-   - GDAL utilities
+   - GDAL utilities (gdal-bin)
    - Git
+   - libpq-dev (for psycopg2)
+   - osmium-tool (for OSM data conversion)
 
-2. **Python Dependencies**
+2. **System Installation (Ubuntu/Debian)**
    ```bash
+   # Install system dependencies
+   sudo apt update
+   sudo apt install -y \
+       postgresql-12 \
+       postgresql-12-postgis-3 \
+       postgis \
+       python3-pip \
+       python3-dev \
+       gdal-bin \
+       libgdal-dev \
+       git \
+       libpq-dev \
+       osmium-tool
+
+   # Start PostgreSQL service
+   sudo systemctl start postgresql
+   ```
+
+   For other operating systems, please refer to their respective package managers and installation guides.
+
+3. **Python Dependencies**
+   ```bash
+   # Install Python packages
    pip install -r web-app/requirements.txt
    pip install -r scripts/requirements.txt
    ```
+
+   This will install:
+   - Core dependencies: pandas, numpy, geopandas, shapely
+   - Web interface: streamlit, folium
+   - Database connectivity: psycopg2-binary, SQLAlchemy
+   - Geospatial processing: pyproj, matplotlib, contextily
+   
+4. **Environment Variables**
+   Make sure PostgreSQL is running and accessible. You may need to:
+   - Set up a PostgreSQL user with appropriate permissions
+   - Configure database access in config.py
+   - Ensure PostgreSQL is listening on localhost
 
 ## Project Structure
 ```
@@ -198,34 +245,32 @@ sudo apt-get install osmium-tool
 
 # Convert data (with correct CRS)
 osmium cat input.osm.pbf -o output.osm
-ogr2ogr -f GPKG -t_srs EPSG:25832 output_25832.gpkg output.osm -nln roads -where "highway IS NOT NULL AND highway != '' AND highway IN ('motorway','trunk','primary','secondary','tertiary','residential','unclassified','service','motorway_link','trunk_link','primary_link','secondary_link','tertiary_link','living_street','pedestrian','track','bus_guideway','escape','raceway','road','busway','footway','bridleway','steps','corridor','path','cycleway')" -oo CONFIG_FILE=osmconf.ini lines
+ogr2ogr -f GPKG -t_srs EPSG:25832 output_25832.gpkg output.osm -nln roads -oo CONFIG_FILE=data/osmconf.ini lines
 
 # Note: This command will:
 # - Convert to EPSG:25832 (UTM Zone 32N)
-# - Filter out NULL and empty highway values
-# - Only include specified road types
 # - Create a clean roads layer named 'roads'
+# - Apply road type filtering based on osmconf.ini configuration
 ```
+
+The filtering of road types and attributes is handled by the `data/osmconf.ini` configuration file, which:
+- Selects relevant road attributes (name, surface, lanes, etc.)
+- Filters for specific road types (motorway, primary, secondary, etc.)
+- Excludes non-road features and NULL values
 
 **Windows:**
 - Use [OSGeo4W](https://trac.osgeo.org/osgeo4w/) installer which includes GDAL/OGR tools
 - Or use [QGIS](https://qgis.org/) (includes necessary conversion tools)
-
+- Use the same ogr2ogr command as above
 
 **macOS:**
 ```bash
 # Install tools using Homebrew
 brew install osmium-tool gdal
 
-# Convert data (same commands as Linux)
+# Convert data (same command as Linux)
 osmium cat input.osm.pbf -o output.osm
-ogr2ogr -f GPKG -t_srs EPSG:25832 output_25832.gpkg output.osm -nln roads -where "highway IS NOT NULL AND highway != '' AND highway IN ('motorway','trunk','primary','secondary','tertiary','residential','unclassified','service','motorway_link','trunk_link','primary_link','secondary_link','tertiary_link','living_street','pedestrian','track','bus_guideway','escape','raceway','road','busway','footway','bridleway','steps','corridor','path','cycleway')" -oo CONFIG_FILE=osmconf.ini lines
-
-# Note: This command will:
-# - Convert to EPSG:25832 (UTM Zone 32N)
-# - Filter out NULL and empty highway values
-# - Only include specified road types
-# - Create a clean roads layer named 'roads'
+ogr2ogr -f GPKG -t_srs EPSG:25832 output_25832.gpkg output.osm -nln roads -oo CONFIG_FILE=data/osmconf.ini lines
 ```
 
 > **Note**: The core analysis pipeline runs in Docker and works identically across all platforms. Data conversion is a one-time setup step that can be done using various tools depending on your operating system.
@@ -308,7 +353,7 @@ streamlit run web-app/streamlit_app.py
 Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## Acknowledgments
 - Digital Elevation Model data: [Geoportal NRW](https://www.geoportal.nrw)
